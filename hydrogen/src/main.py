@@ -1,10 +1,10 @@
 from datetime import date, timedelta, datetime, time
 
 
-class Equip: 
+class Equipment: 
     def __init__(self, name):
         self.name = name 
-        # dictionary with key:value date:[Resys], holds Resys from today to 30 days from now
+        # dictionary with key:value date:[Reservations], holds Reservations from today to 30 days from now
         self.res = {}
         for i in range(0, 31):
             newdate = datetime.now() + timedelta(days = i)
@@ -19,32 +19,32 @@ class Equip:
         elif self.name == 'harvest':
             return 88000
 
-    def freet(self, s_time):
+    def freet(self, start_date):
         '''
         Returns a list of free time blocks on the date of the given time
         '''
         result = []
-        if s_time.weekday() == 6:
+        if start_date.weekday() == 6:
             return result 
-        elif s_time.weekday() == 5:
-            open = datetime.combine(s_time.date(), time(hour=10, minute=0))
-            closet = datetime.combine(s_time.date(), time(hour=16, minute=0))
+        elif start_date.weekday() == 5:
+            open = datetime.combine(start_date.date(), time(hour=10, minute=0))
+            closet = datetime.combine(start_date.date(), time(hour=16, minute=0))
         else:
-            open = datetime.combine(s_time.date(), time(hour=9, minute=0))
-            closet = datetime.combine(s_time.date(), time(hour=18, minute=0))
+            open = datetime.combine(start_date.date(), time(hour=9, minute=0))
+            closet = datetime.combine(start_date.date(), time(hour=18, minute=0))
         
-        if len(self.res[s_time.date()]) == 0:
+        if len(self.res[start_date.date()]) == 0:
             result.append([open, closet])
             return result
         
         def helper(r):
             return r.startt
-        self.res[s_time.date()].sort(key=helper)
+        self.res[start_date.date()].sort(key=helper)
 
         if self.name == 'scanner':
-            # print('current Resys: ', self.res[s_time.date()])
-            for r in self.res[s_time.date()]:
-                # print("RESY: ", r.startt, r.end_t)
+            # print('current Reservations: ', self.res[start_date.date()])
+            for r in self.res[start_date.date()]:
+                # print("REServation: ", r.startt, r.end_t)
                 if r.startt > open + timedelta(minutes=60):
                     if open != r.startt - timedelta(minutes=60):
                         result.append([open, r.startt - timedelta(minutes=60)])
@@ -54,7 +54,7 @@ class Equip:
                 result.append([open, closet])
             return result
         elif self.name == 'scooper':
-            for r in self.res[s_time.date()]:
+            for r in self.res[start_date.date()]:
                 if r.startt > open:
                     result.append([open, r.startt])
                 open = r.end_t
@@ -62,7 +62,7 @@ class Equip:
                 result.append([open, closet])
             return result
         elif self.name == 'harvest':
-            for r in self.res[s_time.date()]:
+            for r in self.res[start_date.date()]:
                 if r.startt > open + timedelta(hours=6):
                     if open != r.startt - timedelta(hours=6):
                         result.append([open, r.startt - timedelta(hours=6)])
@@ -81,184 +81,187 @@ class Equip:
 
 
     
-class Resy:
+class Reservation:
 
-    def __init__(self, usern, id, Equip, startt, durat):
-        self.usern = usern
+    def __init__(self, username, id, Equipment, startt, duration):
+        self.username = username
         self.id = id 
-        self.Equip = Equip
+        self.Equipment = Equipment
         self.equipn = None
         self.startt = startt
-        self.durat = durat
-        self.end_t = self.startt + timedelta(minutes=int(durat))
+        self.duration = duration
+        self.end_t = self.startt + timedelta(minutes=int(duration))
         self.t_cost = 0 
         self.down_p = 0
         self.status = 'pending'
         self.refund = 0
 
     def __repr__(self):
-        return f"Resy {self.id}: {self.usern} booked {self.equipn} for {self.startt} to {self.end_t} for ${self.t_cost}"
+        return f"Reservation {self.id}: {self.username} booked {self.equipn} for {self.startt} to {self.end_t} for ${self.t_cost}"
     
 
 class Main:
     def __init__(self):
-        self.scans = {'1':Equip('scanner'), '2':Equip('scanner'), '3':Equip('scanner'), '4':Equip('scanner')} 
-        self.scoop = {'1':Equip('scooper'), '2':Equip('scooper'), '3':Equip('scooper'), '4':Equip('scooper')} 
-        self.harv = {'1': Equip('harvest')}
+        self.scans = {'1':Equipment('scanner'), '2':Equipment('scanner'), '3':Equipment('scanner'), '4':Equipment('scanner')} 
+        self.scoop = {'1':Equipment('scooper'), '2':Equipment('scooper'), '3':Equipment('scooper'), '4':Equipment('scooper')} 
+        self.harv = {'1': Equipment('harvest')}
         self.resnum = 0
 
-    def ch_free(self, m_type, r_dt):
+    def ch_free(self, machine_type, reservation_date):
         # checks for free time blocks
         result = {}
-        if m_type == 'scanner':
-            for k, v in self.scans.items():
-                result[k] = v.freet(r_dt)
-        elif m_type == 'scooper':
-            for k, v in self.scoop.items():
-                result[k] = v.freet(r_dt)
-        elif m_type == 'harvest':
-            for k, v in self.harv.items():
-                result[k] = v.freet(r_dt)
+        if machine_type == 'scanner':
+            for key, value in self.scans.items():
+                result[key] = value.freet(reservation_date)
+        elif machine_type == 'scooper':
+            for key, value in self.scoop.items():
+                result[key] = value.freet(reservation_date)
+        elif machine_type == 'harvest':
+            for key, value in self.harv.items():
+                result[key] = value.freet(reservation_date)
         return result
 
-    def reserve(self, usern, m_type, m_num, s_time, durat):
+    def reserve(self, username, machine_type, machine_num, start_time, duration):
         self.resnum += 1
-        r = Resy(usern, self.resnum, m_type, s_time, durat)
-        td = s_time - datetime.today()
-        if m_type == 'scanner':
-            self.scans[m_num].res[s_time.date()].append(r)
-            r.status = 'booked'
-            r.equipn = m_num
-            if td.days >= 14:
-                r.t_cost = .25 * self.scans[m_num].cost(int(durat) / 60)
-                r.down_p = 0.5 * r.t_cost
+        reservation = Reservation(username, self.resnum, machine_type, start_time, duration)
+        time_difference = start_time - datetime.today()
+        if machine_type == 'scanner':
+            self.scans[machine_num].res[start_time.date()].append(reservation)
+            reservation.status = 'booked'
+            reservation.equipn = machine_num
+            if time_difference.days >= 14:
+                reservation.t_cost = .25 * self.scans[machine_num].cost(int(duration) / 60)
+                reservation.down_p = 0.5 * reservation.t_cost
             else:
-                r.t_cost = self.scans[m_num].cost(int(durat) / 60)
-                r.down_p = 0.5 * r.t_cost
-            return r
-        if m_type == 'scooper':
-            self.scoop[m_num].res[s_time.date()].append(r)
-            r.status = 'booked'
-            r.equipn = m_num
-            if td.days >= 14:
-                r.t_cost = .25 * self.scans[m_num].cost(int(durat) / 60)
-                r.down_p = 0.5 * r.t_cost
+                reservation.t_cost = self.scans[machine_num].cost(int(duration) / 60)
+                reservation.down_p = 0.5 * reservation.t_cost
+            return reservation
+        if machine_type == 'scooper':
+            self.scoop[machine_num].res[start_time.date()].append(reservation)
+            reservation.status = 'booked'
+            reservation.equipn = machine_num
+            if time_difference.days >= 14:
+                reservation.t_cost = .25 * self.scans[machine_num].cost(int(duration) / 60)
+                reservation.down_p = 0.5 * reservation.t_cost
             else:
-                r.t_cost = self.scans[m_num].cost(int(durat) / 60)
-                r.down_p = 0.5 * r.t_cost
-            return r
-        if m_type == 'harvest':
-            self.harv[m_num].res[s_time.date()].append(r)
-            r.status = 'booked'
-            r.equipn = m_num
-            if td.days >= 14:
-                r.t_cost = .25 * self.scans[m_num].cost(int(durat) / 60)
-                r.down_p = 0.5 * r.t_cost
+                reservation.t_cost = self.scans[machine_num].cost(int(duration) / 60)
+                reservation.down_p = 0.5 * reservation.t_cost
+            return reservation
+        if machine_type == 'harvest':
+            self.harv[machine_num].res[start_time.date()].append(reservation)
+            reservation.status = 'booked'
+            reservation.equipn = machine_num
+            if time_difference.days >= 14:
+                reservation.t_cost = .25 * self.scans[machine_num].cost(int(duration) / 60)
+                reservation.down_p = 0.5 * reservation.t_cost
             else:
-                r.t_cost = self.scans[m_num].cost(int(durat) / 60)
-                r.down_p = 0.5 * r.t_cost
-            return r
+                reservation.t_cost = self.scans[machine_num].cost(int(duration) / 60)
+                reservation.down_p = 0.5 * reservation.t_cost
+            return reservation
     
-    def cancel(self, m_type, m_num, r_dt, r_id):
+    def cancel(self, machine_type, machine_num, reservation_cancel_date, reservation_id):
         refund = 0
-        ds = 0
-        if m_type == 'scanner':
+        days_in_advance = 0
+        if machine_type == 'scanner':
             # calculate refund
-            for r in self.scans[m_num].res[r_dt.date()]:
-                if r.id == int(r_id):
-                    td = r_dt - datetime.today()
-                    for i in range(1, td.days+1):
-                        d = datetime.today() + timedelta(days=i)
-                        if d.weekday() < 6:
-                            ds += 1
-                    print(f"Cancelled {ds} days in advance")
-                    if ds >= 2 and ds < 7:
+            for reservation in self.scans[machine_num].res[reservation_cancel_date.date()]:
+                if reservation.id == int(reservation_id):
+                    time_difference = reservation_cancel_date - datetime.today()
+                    
+                    for i in range(1, time_difference.days+1):
+                        day = datetime.today() + timedelta(days=i)
+    
+                        if day.weekday() < 6:
+                            days_in_advance += 1
+
+                    print(f"Cancelled {days_in_advance} days in advance")
+                    if days_in_advance >= 2 and days_in_advance < 7:
                         print('50 percent refund')
-                        refund = r.down_p * 0.5
-                    elif ds >= 7:
+                        refund = reservation.down_p * 0.5
+                    elif days_in_advance >= 7:
                         print('75 percent refund')
-                        refund = r.down_p * 0.75
+                        refund = reservation.down_p * 0.75
                     break
-            # print(self.scans[m_num].res[r_dt.date()])
-            self.scans[m_num].res[r_dt.date()] = [r for r in self.scans[m_num].res[r_dt.date()] if r.id != int(r_id)]
+            # print(self.scans[machine_num].res[reservation_cancel_date.date()])
+            self.scans[machine_num].res[reservation_cancel_date.date()] = [reservation for reservation in self.scans[machine_num].res[reservation_cancel_date.date()] if reservation.id != int(reservation_id)]
             return refund
-            # print(self.scans[m_num].res[r_dt.date()]) 
-        elif m_type == 'scooper':
+            # print(self.scans[machine_num].res[reservation_cancel_date.date()]) 
+        elif machine_type == 'scooper':
             # calculate refund
-            for r in self.scoop[m_num].res[r_dt.date()]:
-                if r.id == int(r_id):
-                    td = r_dt - datetime.today()
-                    for i in range(1, td.days+1):
-                        d = datetime.today() + timedelta(days=i)
-                        if d.weekday() < 6:
-                            ds += 1
-                    print(f"Cancelled {ds} days in advance")
-                    if ds >= 2 and ds < 7:
+            for reservation in self.scoop[machine_num].res[reservation_cancel_date.date()]:
+                if reservation.id == int(reservation_id):
+                    time_difference = reservation_cancel_date - datetime.today()
+                    for i in range(1, time_difference.days+1):
+                        day = datetime.today() + timedelta(days=i)
+                        if day.weekday() < 6:
+                            days_in_advance += 1
+                    print(f"Cancelled {days_in_advance} days in advance")
+                    if days_in_advance >= 2 and days_in_advance < 7:
                         print('50 percent refund')
-                        refund = r.down_p * 0.5
-                    elif ds >= 7:
+                        refund = reservation.down_p * 0.5
+                    elif days_in_advance >= 7:
                         print('75 percent refund')
-                        refund = r.down_p * 0.75
+                        refund = reservation.down_p * 0.75
                     break
-            self.scoop[m_num].res[r_dt.date()] = [r for r in self.scoop[m_num].res[r_dt.date()] if r.id != int(r_id)]
+            self.scoop[machine_num].res[reservation_cancel_date.date()] = [reservation for reservation in self.scoop[machine_num].res[reservation_cancel_date.date()] if reservation.id != int(reservation_id)]
             return refund
-        elif m_type == 'harvest':
+        elif machine_type == 'harvest':
             # calculate refund
-            for r in self.harv[m_num].res[r_dt.date()]:
-                if r.id == int(r_id):
-                    td = r_dt - datetime.today()
-                    for i in range(1, td.days+1):
-                        d = datetime.today() + timedelta(days=i)
-                        if d.weekday() < 6:
-                            ds += 1
-                    print(f"Cancelled {ds} days in advance")
-                    if ds >= 2 and ds < 7:
+            for reservation in self.harv[machine_num].res[reservation_cancel_date.date()]:
+                if reservation.id == int(reservation_id):
+                    time_difference = reservation_cancel_date - datetime.today()
+                    for i in range(1, time_difference.days+1):
+                        day = datetime.today() + timedelta(days=i)
+                        if day.weekday() < 6:
+                            days_in_advance += 1
+                    print(f"Cancelled {days_in_advance} days in advance")
+                    if days_in_advance >= 2 and days_in_advance < 7:
                         print('50 percent refund')
-                        refund = r.down_p * 0.5
-                    elif ds >= 7:
+                        refund = reservation.down_p * 0.5
+                    elif days_in_advance >= 7:
                         print('75 percent refund')
-                        refund = r.down_p * 0.75
+                        refund = reservation.down_p * 0.75
                     break
-            self.harv[m_num].res[r_dt.date()] = [r for r in self.harv[m_num].res[r_dt.date()] if r.id != int(r_id)]
+            self.harv[machine_num].res[reservation_cancel_date.date()] = [reservation for reservation in self.harv[machine_num].res[reservation_cancel_date.date()] if reservation.id != int(reservation_id)]
             return refund
 
-    def rbydate(self, start, end, cust=None, mach=None):
+    def rbydate(self, start_date, end_date, cust=None, mach=None):
         result = {'scanner':[], 'scooper':[], 'harvest':[]}
         if cust:
-            for k, v in self.scans.items():
-                for k2, v2 in v.res.items():
-                    if k2 >= start and k2 <= end and len(v2) > 0: 
-                        for r in v2:
-                            if r.usern == cust:
+            for key, value in self.scans.items():
+                for key2, value2 in value.res.items():
+                    if key2 >= start_date and key2 <= end_date and len(value2) > 0: 
+                        for r in value2:
+                            if r.username == cust:
                                 result['scanner'].append(r) 
-            for k, v in self.scoop.items():
-                for k2, v2 in v.res.items():
-                    if k2 >= start and k2 <= end and len(v2) > 0: 
-                        for r in v2:
-                            if r.usern == cust:
+            for key, value in self.scoop.items():
+                for key2, value2 in value.res.items():
+                    if key2 >= start_date and key2 <= end_date and len(value2) > 0: 
+                        for r in value2:
+                            if r.username == cust:
                                 result['scooper'].append(r) 
-            for k, v in self.harv.items():
-                for k2, v2 in v.res.items():
-                    if k2 >= start and k2 <= end and len(v2) > 0: 
-                        for r in v2:
-                            if r.usern == cust:
+            for key, value in self.harv.items():
+                for key2, value2 in value.res.items():
+                    if key2 >= start_date and key2 <= end_date and len(value2) > 0: 
+                        for r in value2:
+                            if r.username == cust:
                                 result['harvest'].append(r) 
             return result
 
-        for k, v in self.scans.items():
-            for k2, v2 in v.res.items():
-                if k2 >= start and k2 <= end and len(v2) > 0: 
-                    for r in v2:
+        for key, value in self.scans.items():
+            for key2, value2 in value.res.items():
+                if key2 >= start_date and key2 <= end_date and len(value2) > 0: 
+                    for r in value2:
                         result['scanner'].append(r) 
-        for k, v in self.scoop.items():
-            for k2, v2 in v.res.items():
-                if k2 >= start and k2 <= end and len(v2) > 0: 
-                    for r in v2:
+        for key, value in self.scoop.items():
+            for key2, value2 in value.res.items():
+                if key2 >= start_date and key2 <= end_date and len(value2) > 0: 
+                    for r in value2:
                         result['scooper'].append(r) 
-        for k, v in self.harv.items():
-            for k2, v2 in v.res.items():
-                if k2 >= start and k2 <= end and len(v2) > 0: 
-                    for r in v2:    
+        for key, value in self.harv.items():
+            for key2, value2 in value.res.items():
+                if key2 >= start_date and key2 <= end_date and len(value2) > 0: 
+                    for r in value2:    
                         result['harvest'].append(r) 
         if mach:
             return result[mach]
@@ -277,59 +280,60 @@ while True:
         menu = 'Menu:\n 1. Reserve a Machine\n 2. Cancel a Reservation\n 3. See Reservations by Date Range\n '\
             '4. See Reservations for cust by Date Range\n 5. See Reservations for Machine by Date Range\n 6. Log Out'
         print(menu)
-        mc = input("Choose a menu item (1 - 6): ")
+        menu_choice = input("Choose a menu item (1 - 6): ")
 
-        if int(mc) == 1:
+        if int(menu_choice) == 1:
             print('Reserving a machine')
             while True:
-                usern = input('Enter username of customer: ')
-                m_type = input('What kind of machine would you like to reserve? (scanner, scooper, harvest): ')
+                username = input('Enter username of customer: ')
+                machine_type = input('What kind of machine would you like to reserve? (scanner, scooper, harvest): ')
                 # get date and return available machines and their open times on that date
                 # have user choose machine and time
-                r_date = datetime.fromisoformat(input(f"Enter desired reservation date (YYYY-MM-DD): "))
-                print(system.ch_free(m_type, r_date))
-                m_num = input("Which machine would you like to book? Enter the number: ")
-                r_time = datetime.fromisoformat(input("What time would you like to book? Choose from free times, on the hour or half hour (YYYY-MM-DDTHH:MM): "))
-                durat = input("For how long do you need to book? (in minutes, 30 minute increments): ")
-                if m_type == 'scanner' and int(durat) > 120:
-                    durat = input("Scanners cannot be reserved for more than 2 hours: ")
-                r = system.reserve(usern, m_type, m_num, r_time, durat)
-                print(f"Done! Your reservation id is {r.id} for {m_type} number {m_num}. That will cost {r.t_cost}, and your down payment is {r.down_p}")
+                reservation_date = datetime.fromisoformat(input(f"Enter desired reservation date (YYYY-MM-DD): "))
+                print(system.ch_free(machine_type, reservation_date))
+                machine_num = input("Which machine would you like to book? Enter the number: ")
+                reservation_time = datetime.fromisoformat(input("What time would you like to book? Choose from free times, on the hour or half hour (YYYY-MM-DDTHH:MM): "))
+                duration = input("For how long do you need to book? (enter in minutes, 30 minute increments): ")
+                if machine_type == 'scanner' and int(duration) > 120:
+                    duration = input("Scanners cannot be reserved for more than 2 hours: ")
+                r = system.reserve(username, machine_type, machine_num, reservation_time, duration)
+                print(f"Done! Your reservation id is {r.id} for {machine_type} number {machine_num}. That will cost {r.t_cost}, and your down payment is {r.down_p}")
                 break 
-        elif int(mc) == 2:
+        elif int(menu_choice) == 2:
             print('Cancel a reservation')
             while True:
-                m_type = input('What kind of machine would you like to cancel? (scanner, scooper, harvest): ')
-                m_num = input(f"Which {m_type} would you like to cancel?: ")
-                r_dt = datetime.fromisoformat(input('What was the date and time of your Resy? (YYYY-MM-DDTHH:MM): '))
-                r_id = input('What was your reservation id? ')
-                refund = system.cancel(m_type, m_num, r_dt, r_id)
+                machine_type = input('What kind of machine would you like to cancel? (scanner, scooper, harvest): ')
+                machine_num = input(f"Which {machine_type} would you like to cancel?: ")
+                reservation_cancel_date = datetime.fromisoformat(input('What was the date and time of your Reservation? (YYYY-MM-DDTHH:MM): '))
+                reservation_id = input('What was your reservation id? ')
+                refund = system.cancel(machine_type, machine_num, reservation_cancel_date, reservation_id)
                 print(f"Done! Your refund is {refund}")
                 break
-        elif int(mc) == 3:
+        elif int(menu_choice) == 3:
             print('See reservations by date range')
             while True:
-                start = date.fromisoformat(input('From (YYYY-MM-DD): '))
-                end = date.fromisoformat(input('To (YYYY-MM-DD): '))
-                print(system.rbydate(start, end))
+                start_date = date.fromisoformat(input('From (YYYY-MM-DD): '))
+                end_date = date.fromisoformat(input('To (YYYY-MM-DD): '))
+                print(system.rbydate(start_date, end_date))
                 break
-        elif int(mc) == 4:
+        elif int(menu_choice) == 4:
             while True:
                 print('See reservations for customer by date range')
-                cust = input('Customer username: ')
-                start = date.fromisoformat(input('From (YYYY-MM-DD): '))
-                end = date.fromisoformat(input('To (YYYY-MM-DD): '))
-                print(system.rbydate(start, end, cust=cust))
+                customer_username = input('Customer username: ')
+                start_date = date.fromisoformat(input('From (YYYY-MM-DD): '))
+                end_date = date.fromisoformat(input('To (YYYY-MM-DD): '))
+                print(system.rbydate(start_date, end_date, cust=customer_username))
                 break 
-        elif int(mc) == 5:
+        elif int(menu_choice) == 5:
             while True:
                 print('See reservations for machine by date range')
-                machine = input('Machine type (scanner, scooper, harvest): ')
-                start = date.fromisoformat(input('From (YYYY-MM-DD): '))
-                end = date.fromisoformat(input('To (YYYY-MM-DD): '))
-                print(system.rbydate(start, end, mach=machine))
+                machine_type = input('Machine type (scanner, scooper, harvest): ')
+                start_date = date.fromisoformat(input('From (YYYY-MM-DD): '))
+                end_date = date.fromisoformat(input('To (YYYY-MM-DD): '))
+                print(system.rbydate(start_date, end_date, mach=machine_type))
                 break 
-        elif int(mc) == 6:
+        elif int(menu_choice) == 6:
             break
+
 
 

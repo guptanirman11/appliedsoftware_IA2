@@ -115,7 +115,15 @@ class Main:
         self.resnum += 1
         reservation = Reservation(username, self.resnum, machine_type, start_time, duration)
         time_difference = start_time - datetime.today()
+        
         if machine_type == 'scanner':
+            
+            #Loop to check if the slot is already booked or not for specific machine
+            for res in self.scans[machine_num].res[start_time.date()]: 
+                if res.startt <= start_time and start_time + timedelta(minutes=int(duration)) <=res.end_t : 
+                    print("already booked time slot")
+                    return
+            
             self.scans[machine_num].res[start_time.date()].append(reservation)
             reservation.status = 'booked'
             reservation.equipn = machine_num
@@ -126,26 +134,38 @@ class Main:
                 reservation.t_cost = self.scans[machine_num].cost(int(duration) / 60)
                 reservation.down_p = 0.5 * reservation.t_cost
             return reservation
+        
         if machine_type == 'scooper':
+            for res in self.scoop[machine_num].res[start_time.date()]:
+                
+                if res.startt <= start_time and start_time + timedelta(minutes=int(duration)) <=res.end_t : 
+                    print("already booked time slot")
+                    return
             self.scoop[machine_num].res[start_time.date()].append(reservation)
             reservation.status = 'booked'
             reservation.equipn = machine_num
             if time_difference.days >= 14:
-                reservation.t_cost = .25 * self.scans[machine_num].cost(int(duration) / 60)
+                reservation.t_cost = .25 * self.scoop[machine_num].cost(int(duration) / 60)
                 reservation.down_p = 0.5 * reservation.t_cost
             else:
-                reservation.t_cost = self.scans[machine_num].cost(int(duration) / 60)
+                reservation.t_cost = self.scoop[machine_num].cost(int(duration) / 60)
                 reservation.down_p = 0.5 * reservation.t_cost
             return reservation
+        
         if machine_type == 'harvest':
+            for res in self.harv[machine_num].res[start_time.date()]:
+                
+                if res.startt <= start_time and start_time + timedelta(minutes=int(duration)) <=res.end_t : 
+                    print("already booked time slot")
+                    return
             self.harv[machine_num].res[start_time.date()].append(reservation)
             reservation.status = 'booked'
             reservation.equipn = machine_num
             if time_difference.days >= 14:
-                reservation.t_cost = .25 * self.scans[machine_num].cost(int(duration) / 60)
+                reservation.t_cost = .25 * self.harv[machine_num].cost(int(duration) / 60)
                 reservation.down_p = 0.5 * reservation.t_cost
             else:
-                reservation.t_cost = self.scans[machine_num].cost(int(duration) / 60)
+                reservation.t_cost = self.harv[machine_num].cost(int(duration) / 60)
                 reservation.down_p = 0.5 * reservation.t_cost
             return reservation
     '''
@@ -267,7 +287,8 @@ while True:
                     duration = input("Scanners cannot be reserved for more than 2 hours: ")
                 
                 r = system.reserve(username, machine_type, machine_num, reservation_time, duration)
-                print(f"Done! Your reservation id is {r.id} for {machine_type} number {machine_num}. That will cost {r.t_cost}, and your down payment is {r.down_p}")
+                if r != None:
+                    print(f"Done! Your reservation id is {r.id} for {machine_type} number {machine_num}. That will cost {r.t_cost}, and your down payment is {r.down_p}")
                 break 
         
         elif int(menu_choice) == 2:

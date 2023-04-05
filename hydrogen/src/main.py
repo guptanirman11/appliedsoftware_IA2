@@ -45,51 +45,23 @@ class Equipment:
         '''Helper function  Sort the reservations for the given date in chronological order.'''
         def helper(r):
             return r.startt
+        
         self.res[start_date.date()].sort(key=helper)
 
-
         # Check for free time blocks between reservations for a scanner, scooper and harvester
-        if self.name == 'scanner':
-            # print('current Reservations: ', self.res[start_date.date()])
-            for r in self.res[start_date.date()]:
-                # print("REServation: ", r.startt, r.end_t)
-                if r.startt > open + timedelta(minutes=60):
-                    if open != r.startt - timedelta(minutes=60):
-                        result.append([open, r.startt - timedelta(minutes=60)])
-                    # print(result)
-                open = r.end_t + timedelta(minutes=60)
+       
+        for r in self.res[start_date.date()]:
+            # print("REServation: ", r.startt, r.end_t)
+            if r.startt > open + timedelta(minutes=60):
+                if open != r.startt - timedelta(minutes=60):
+                    result.append([open, r.startt - timedelta(minutes=60)])
+                # print(result)
+            open = r.end_t + timedelta(minutes=60)
 
-            # Check for free time after the last reservation, if any
-            if open < closet:
-                result.append([open, closet])
-            return result
-        
-        elif self.name == 'scooper':
-            for r in self.res[start_date.date()]:
-                if r.startt > open:
-                    result.append([open, r.startt])
-                open = r.end_t
-            if open < closet:
-                result.append([open, closet])
-            return result
-        
-        elif self.name == 'harvest':
-            for r in self.res[start_date.date()]:
-                if r.startt > open + timedelta(hours=6):
-                    if open != r.startt - timedelta(hours=6):
-                        result.append([open, r.startt - timedelta(hours=6)])
-                open = r.end_t + timedelta(hours=6)
-            if open < closet:
-                result.append([open, closet])
-            return result
-
-
-    def avail(self, startt):
-            free = self.freet(startt)
-            for f in free: 
-                if startt > f[0] and startt < f[1]:
-                    return True 
-            return False
+        # Check for free time after the last reservation, if any
+        if open < closet:
+            result.append([open, closet])
+        return result
 
 
 '''Reservation class with username, id, Equipment name , start time and duration as class variables'''
@@ -189,7 +161,7 @@ class Main:
         returns the refund'''
 
         if machine_type == "scanner":
-            machine_reservations = self.scans[machine_num].res[reservation_cancel_date.date()].copy()
+            machine_reservations = self.scans[machine_num].res[reservation_cancel_date.date()]
         elif machine_type == "scooper":
             machine_reservations = self.scoop[machine_num].res[reservation_cancel_date.date()]
         elif machine_type == "harvest":

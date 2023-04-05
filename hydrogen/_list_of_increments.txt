@@ -1,0 +1,11 @@
+e7cf2e6 (HEAD -> main) Resolved the issue of calculating amount and included a check to book again if time slot is already booked
+
+4f25407 Refactored repeated code in Equipment class in different methods
+
+0b2f19a Refactored repeated code in main class in different methods
+
+88b10fe Added appropriate comments and docstrings
+
+38c908d Updated the Class/functions/variable names throughout main.py
+
+1ddcbfa (origin/main) Assigned Assignment

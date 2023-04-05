@@ -1,5 +1,5 @@
 from datetime import date, timedelta, datetime, time
-
+import copy
 
 class Equipment: 
     def __init__(self, name):
@@ -182,117 +182,82 @@ class Main:
         #variables local to method 
         refund = 0
         days_in_advance = 0
-        
-        # calculate refund depending upon the machine type
-        if machine_type == 'scanner':
-            '''Iterates over the list of the machine if the reservation id matches, we calculate the number of days in advance the 
-            the booking date we are cancelling the reservation. Then we calculate the refund also remove the reservation from the machine reservation list 
-            and return the refund. '''
+        '''  calculate refund depending upon the machine type
+        takes a copy of the reservation list depending upon the equipment
+        calculates the refund
+        remove the reservation from the list
+        returns the refund'''
 
-            for reservation in self.scans[machine_num].res[reservation_cancel_date.date()]:
-                if reservation.id == int(reservation_id):
-                    time_difference = reservation_cancel_date - datetime.today()
-                    
-                    for i in range(1, time_difference.days+1):
-                        day = datetime.today() + timedelta(days=i)
-    
-                        if day.weekday() < 6:
-                            days_in_advance += 1
+        if machine_type == "scanner":
+            machine_reservations = self.scans[machine_num].res[reservation_cancel_date.date()].copy()
+        elif machine_type == "scooper":
+            machine_reservations = self.scoop[machine_num].res[reservation_cancel_date.date()]
+        elif machine_type == "harvest":
+            machine_reservations = self.harv[machine_num].res[reservation_cancel_date.date()]
 
-                    print(f"Cancelled {days_in_advance} days in advance")
-                    if days_in_advance >= 2 and days_in_advance < 7:
-                        print('50 percent refund')
-                        refund = reservation.down_p * 0.5
-                    elif days_in_advance >= 7:
-                        print('75 percent refund')
-                        refund = reservation.down_p * 0.75
-                    break
-            # print(self.scans[machine_num].res[reservation_cancel_date.date()])
+        for reservation in machine_reservations:
+            if reservation.id == int(reservation_id):
+                time_difference = reservation_cancel_date - datetime.today()
+                
+                for i in range(1, time_difference.days+1):
+                    day = datetime.today() + timedelta(days=i)
+
+                    if day.weekday() < 6:
+                        days_in_advance += 1
+
+                print(f"Cancelled {days_in_advance} days in advance")
+                if days_in_advance >= 2 and days_in_advance < 7:
+                    print('50 percent refund')
+                    refund = reservation.down_p * 0.5
+                elif days_in_advance >= 7:
+                    print('75 percent refund')
+                    refund = reservation.down_p * 0.75
+                break
+        if machine_type == "scanner":
             self.scans[machine_num].res[reservation_cancel_date.date()] = [reservation for reservation in self.scans[machine_num].res[reservation_cancel_date.date()] if reservation.id != int(reservation_id)]
-            return refund
-            # print(self.scans[machine_num].res[reservation_cancel_date.date()]) 
-        elif machine_type == 'scooper':
-            
-            for reservation in self.scoop[machine_num].res[reservation_cancel_date.date()]:
-                if reservation.id == int(reservation_id):
-                    time_difference = reservation_cancel_date - datetime.today()
-                    for i in range(1, time_difference.days+1):
-                        day = datetime.today() + timedelta(days=i)
-                        if day.weekday() < 6:
-                            days_in_advance += 1
-                    print(f"Cancelled {days_in_advance} days in advance")
-                    if days_in_advance >= 2 and days_in_advance < 7:
-                        print('50 percent refund')
-                        refund = reservation.down_p * 0.5
-                    elif days_in_advance >= 7:
-                        print('75 percent refund')
-                        refund = reservation.down_p * 0.75
-                    break
+        elif machine_type == "scooper":
             self.scoop[machine_num].res[reservation_cancel_date.date()] = [reservation for reservation in self.scoop[machine_num].res[reservation_cancel_date.date()] if reservation.id != int(reservation_id)]
-            return refund
-        elif machine_type == 'harvest':
-            # calculate refund
-            for reservation in self.harv[machine_num].res[reservation_cancel_date.date()]:
-                if reservation.id == int(reservation_id):
-                    time_difference = reservation_cancel_date - datetime.today()
-                    for i in range(1, time_difference.days+1):
-                        day = datetime.today() + timedelta(days=i)
-                        if day.weekday() < 6:
-                            days_in_advance += 1
-                    print(f"Cancelled {days_in_advance} days in advance")
-                    if days_in_advance >= 2 and days_in_advance < 7:
-                        print('50 percent refund')
-                        refund = reservation.down_p * 0.5
-                    elif days_in_advance >= 7:
-                        print('75 percent refund')
-                        refund = reservation.down_p * 0.75
-                    break
+        elif machine_type == "harvest":
             self.harv[machine_num].res[reservation_cancel_date.date()] = [reservation for reservation in self.harv[machine_num].res[reservation_cancel_date.date()] if reservation.id != int(reservation_id)]
-            return refund
+        
+        return refund
     
     '''Input:Function takes start date, end date, customer and machine name if required and
      returns dictionary of list of reservation within that date range of each machine type unless mantioned.'''
-    def rbydate(self, start_date, end_date, cust=None, mach=None):
+    def rbydate(self, start_date, end_date, customer=None, machine=None):
         #maintining a dictionary of scanners, scoopers and harvesters which will contain the reservations within the date range.
         result = {'scanner':[], 'scooper':[], 'harvest':[]}
-        if cust:
-            for key, value in self.scans.items():
-                for key2, value2 in value.res.items():
-                    if key2 >= start_date and key2 <= end_date and len(value2) > 0: 
-                        for r in value2:
-                            if r.username == cust:
-                                result['scanner'].append(r) 
-            for key, value in self.scoop.items():
-                for key2, value2 in value.res.items():
-                    if key2 >= start_date and key2 <= end_date and len(value2) > 0: 
-                        for r in value2:
-                            if r.username == cust:
-                                result['scooper'].append(r) 
-            for key, value in self.harv.items():
-                for key2, value2 in value.res.items():
-                    if key2 >= start_date and key2 <= end_date and len(value2) > 0: 
-                        for r in value2:
-                            if r.username == cust:
-                                result['harvest'].append(r) 
-            return result
-
+        # if customer:
         for key, value in self.scans.items():
             for key2, value2 in value.res.items():
                 if key2 >= start_date and key2 <= end_date and len(value2) > 0: 
                     for r in value2:
-                        result['scanner'].append(r) 
+                        if customer:
+                            if r.username == customer:
+                                result['scanner'].append(r)
+                        else:
+                                result['scanner'].append(r)
         for key, value in self.scoop.items():
             for key2, value2 in value.res.items():
                 if key2 >= start_date and key2 <= end_date and len(value2) > 0: 
                     for r in value2:
-                        result['scooper'].append(r) 
+                        if customer:
+                            if r.username == customer:
+                                result['scooper'].append(r)
+                        else:
+                                result['scooper'].append(r)
         for key, value in self.harv.items():
             for key2, value2 in value.res.items():
                 if key2 >= start_date and key2 <= end_date and len(value2) > 0: 
-                    for r in value2:    
-                        result['harvest'].append(r) 
-        if mach:
-            return result[mach]
+                    for r in value2:
+                        if customer:
+                            if r.username == customer:
+                                result['harvest'].append(r)
+                        else:
+                                result['harvest'].append(r)
+
+        if machine:
+            return result[machine]
         else:              
             return result
 
@@ -366,7 +331,7 @@ while True:
                 end_date = date.fromisoformat(input('To (YYYY-MM-DD): '))
 
                 #returns list of reservations of a given customer within the given date range using rbydate method of main class.
-                print(system.rbydate(start_date, end_date, cust=customer_username))
+                print(system.rbydate(start_date, end_date, customer=customer_username))
                 break 
         elif int(menu_choice) == 5:
             while True:
@@ -376,7 +341,7 @@ while True:
                 end_date = date.fromisoformat(input('To (YYYY-MM-DD): '))
 
                 #returns list of reservations of a particular machine within the given date range using rbydate method of main class.
-                print(system.rbydate(start_date, end_date, mach=machine_type))
+                print(system.rbydate(start_date, end_date, machine = machine_type))
                 break 
         elif int(menu_choice) == 6:
             break
